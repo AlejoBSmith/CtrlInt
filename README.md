@@ -2,7 +2,10 @@
 Este repositorio es para agregar código de base para que lo tomen como punto de partida para sus asignaciones.
 
 ## PID
-El código del PID solo contiene el término proporcional. Ustedes deben agregar el resto. Tiene una dependencia de movingAvg.
+El código del PID solo contiene el término proporcional. Ustedes deben agregar el resto.
+El código no está documentado y es intencional para que lo analicen y entiendan.
+
+Tiene una dependencia de movingAvg.
 https://www.arduino.cc/reference/en/libraries/movingavg/
 
 ## Lógica difusa
