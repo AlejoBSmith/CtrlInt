@@ -1,16 +1,13 @@
 #include <Arduino.h>
 #include <movingAvg.h>
 
-// Pines control motor
 const int pwmPin = 9;   // Enable pin (PWM input)
 const int in1Pin = 7;   // IN1 pin
 const int in2Pin = 8;   // IN2 pin
 
-// Pines encoder
 const int encoderA = 2; // Encoder channel A
 const int encoderB = 3; // Encoder channel B
 
-//Controlador
 int sumaPID = 0;
 int accionProp, accionDeriv, accionInteg, error, tiempo, tiempoanterior, referencia, encoderTicksActual, encoderTicksAnterior, deltaencoderTicks = 0;
 float Kp, Ki, Kd, tiempociclo, RPM, RPMPromedio = 0;
