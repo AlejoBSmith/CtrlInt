@@ -1,0 +1,78 @@
+#include <Arduino.h>
+#include <movingAvg.h>
+
+// Pines control motor
+const int pwmPin = 9;   // Enable pin (PWM input)
+const int in1Pin = 7;   // IN1 pin
+const int in2Pin = 8;   // IN2 pin
+
+// Pines encoder
+const int encoderA = 2; // Encoder channel A
+const int encoderB = 3; // Encoder channel B
+
+//Controlador
+int sumaPID = 0;
+int accionProp, accionDeriv, accionInteg, error, tiempo, tiempoanterior, referencia, encoderTicksActual, encoderTicksAnterior, deltaencoderTicks = 0;
+float Kp, Ki, Kd, tiempociclo, RPM, RPMPromedio = 0;
+String DatoSerial;
+movingAvg RPMAvg(100);
+
+volatile float encoderTicks = 0;
+int lastEncoded = 0;
+
+void updateEncoder() {
+  // Se leen los encoder A y B para luego combinarlos en un solo número
+  // Para más info, ver https://en.wikipedia.org/wiki/Incremental_encoder sección "State transitions"
+  int MSB = digitalRead(encoderA);
+  int LSB = digitalRead(encoderB);
+
+  int encoded = (MSB << 1) | LSB;
+  int sum = (lastEncoded << 2) | encoded;
+
+  if(sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) encoderTicks++;
+  if(sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) encoderTicks--;
+
+  lastEncoded = encoded;
+}
+
+void setup() {
+  pinMode(pwmPin, OUTPUT);
+  pinMode(in1Pin, OUTPUT);
+  pinMode(in2Pin, OUTPUT);
+  digitalWrite(in1Pin, HIGH);
+  digitalWrite(in2Pin, LOW);
+  pinMode(encoderA, INPUT);
+  pinMode(encoderB, INPUT);
+  attachInterrupt(digitalPinToInterrupt(encoderA), updateEncoder, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(encoderB), updateEncoder, CHANGE);
+  Serial.begin(9600);
+  referencia = 50;
+  Kp = 2;
+  Ki = 0;
+  Kd = 0;
+  RPMAvg.begin();
+}
+
+void loop() {
+  if(Serial.available()>0){
+    DatoSerial=Serial.readStringUntil('\n');
+    referencia = DatoSerial.toInt();
+  }
+  tiempoanterior=tiempo;
+  tiempo=millis();
+  tiempociclo=tiempo-tiempoanterior;
+  encoderTicksAnterior=encoderTicksActual;
+  encoderTicksActual=encoderTicks;
+  deltaencoderTicks=encoderTicksActual-encoderTicksAnterior;
+  RPM=deltaencoderTicks/(tiempociclo)*78.125;
+  RPMPromedio=RPMAvg.reading(RPM);
+  error=referencia-RPMPromedio;
+  accionProp = error*Kp;
+  sumaPID=accionProp+accionDeriv+accionInteg;
+  sumaPID = constrain(sumaPID, 0, 255);
+  analogWrite(pwmPin, sumaPID);
+
+  Serial.print(RPMPromedio);
+  Serial.print(" ");
+  Serial.println(referencia);
+}
